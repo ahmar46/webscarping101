@@ -1,0 +1,108 @@
+function setupSheet() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Price Tracker");
+  
+  if (!sheet) {
+    // Create a new sheet if not found
+    sheet = SpreadsheetApp.getActiveSpreadsheet().insertSheet();
+    sheet.setName("Price Tracker");
+  } else {
+    // Clear the existing data if the sheet exists
+    sheet.clear();
+  }
+  
+  // Set headers
+  const headers = ["Product", "Mainstreet Price", "Culture Circle Price", "Dawntown Price", "Hypefly Price", "Lowest Price", "Last Updated"];
+  sheet.appendRow(headers);
+  
+  // Apply bold style to headers
+  sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
+  
+  // Set column width for better visibility
+  sheet.setColumnWidths(1, headers.length, 180);
+}
+
+function getPricesFromMultipleSites() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Price Tracker");
+  if (!sheet) {
+    Logger.log('Sheet "Price Tracker" not found.');
+    return;
+  }
+
+  // Define your products and their URLs
+  const products = [
+    { name: "adidas-samba-og-white-black-gum-2", urlMainstreet: "https://marketplace.mainstreet.co.in/products/adidas-samba-og-white-black-gum-2", urlCultureCircle: "https://www.culture-circle.com/products/adidas-samba-og-white-black-gum-2", urlDawntown: "https://dawntown.co.in/products/adidas-samba-og-white-black-gum-2", urlHypefly: "https://hypefly.co.in/products/adidas-samba-og-white-black-gum-2" },
+    // Add more products here
+  ];
+
+  if (sheet.getLastRow() === 0) {
+    // Make sure headers are present
+    setupSheet();
+  }
+
+  products.forEach((item, index) => {
+    try {
+      const priceMainstreet = fetchPriceFromMainstreet(item.urlMainstreet);
+      const priceCultureCircle = fetchPriceFromCultureCircle(item.urlCultureCircle);
+      const priceDawntown = fetchPriceFromDawntown(item.urlDawntown);
+      const priceHypefly = fetchPriceFromHypefly(item.urlHypefly);
+
+      const prices = [priceMainstreet, priceCultureCircle, priceDawntown, priceHypefly];
+      const lowestPrice = Math.min(...prices.filter(p => p !== null)); // Get the lowest price
+
+      const nextRow = sheet.getLastRow() + 1;
+      sheet.getRange(nextRow, 1, 1, 7).setValues([[item.name, priceMainstreet, priceCultureCircle, priceDawntown, priceHypefly, `₹${lowestPrice.toFixed(2)}`, new Date().toLocaleString()]]);
+    } catch (e) {
+      Logger.log(`Error processing ${item.name}: ${e}`);
+    }
+  });
+
+  //sheet.autoResizeColumns(1, 7);
+}
+
+function fetchPriceFromMainstreet(url) {
+  try {
+    const html = UrlFetchApp.fetch(url, { muteHttpExceptions: true }).getContentText();
+    const priceRegex = /"price":"(\d+\.\d{2})"/;
+    const match = priceRegex.exec(html);
+    return match ? parseFloat(match[1]) : null;
+  } catch (e) {
+    Logger.log(`Error fetching Mainstreet: ${e}`);
+    return null;
+  }
+}
+
+function fetchPriceFromCultureCircle(url) {
+  try {
+    const html = UrlFetchApp.fetch(url, { muteHttpExceptions: true }).getContentText();
+    const priceRegex = /"price":"(\d+\.\d{2})"/;
+    const match = priceRegex.exec(html);
+    return match ? parseFloat(match[1]) : null;
+  } catch (e) {
+    Logger.log(`Error fetching Culture Circle: ${e}`);
+    return null;
+  }
+}
+
+function fetchPriceFromDawntown(url) {
+  try {
+    const html = UrlFetchApp.fetch(url, { muteHttpExceptions: true }).getContentText();
+    const priceRegex = /"price":"(\d+\.\d{2})"/;
+    const match = priceRegex.exec(html);
+    return match ? parseFloat(match[1]) : null;
+  } catch (e) {
+    Logger.log(`Error fetching Dawntown: ${e}`);
+    return null;
+  }
+}
+
+function fetchPriceFromHypefly(url) {
+  try {
+    const html = UrlFetchApp.fetch(url, { muteHttpExceptions: true }).getContentText();
+    const priceRegex = /"price":"(\d+\.\d{2})"/;
+    const match = priceRegex.exec(html);
+    return match ? parseFloat(match[1]) : null;
+  } catch (e) {
+    Logger.log(`Error fetching Hypefly: ${e}`);
+    return null;
+  }
+}
