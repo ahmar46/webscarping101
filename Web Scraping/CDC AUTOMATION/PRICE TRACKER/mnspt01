@@ -1,0 +1,53 @@
+function getMainstreetLowestPricesForMany() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("MNST");
+  if (!sheet) {
+    Logger.log('Sheet "MNST" not found.');
+    return;
+  }
+
+  const urls = [/* your list */];
+
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(["Product", "Lowest Price", "Last Updated"]);
+    sheet.getRange(1, 1, 1, 3).setFontWeight("bold");
+  }
+
+  urls.forEach((item, index) => {
+    if (index > 0) {
+      Utilities.sleep(1000);
+    }
+
+    try {
+      const html = UrlFetchApp.fetch(item.url, {
+        muteHttpExceptions: true,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; Google-Apps-Script)'
+        }
+      }).getContentText();
+
+      const variantPriceRegex = /"price":(\d+)/g;
+      let match;
+      let prices = [];
+
+      while ((match = variantPriceRegex.exec(html)) !== null) {
+        const price = parseInt(match[1]);
+        if (price > 1000 && price < 1000000) {
+          prices.push(price);
+        }
+      }
+
+      const nextRow = sheet.getLastRow() + 1;
+      if (prices.length > 0) {
+        const lowestPrice = prices.reduce((min, price) => Math.min(min, price), Infinity) / 100;
+        sheet.getRange(nextRow, 1, 1, 3).setValues([[item.name, `₹${lowestPrice.toFixed(2)}`, new Date().toLocaleString()]]);
+      } else {
+        sheet.getRange(nextRow, 1, 1, 3).setValues([[item.name, "Price Not Found", new Date().toLocaleString()]]);
+      }
+    } catch (e) {
+      const nextRow = sheet.getLastRow() + 1;
+      sheet.getRange(nextRow, 1, 1, 3).setValues([[item.name, "Error fetching", new Date().toLocaleString()]]);
+    }
+  });
+
+  sheet.autoResizeColumns(1, 3);
+}
