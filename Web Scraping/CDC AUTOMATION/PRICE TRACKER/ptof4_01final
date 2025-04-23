@@ -1,0 +1,71 @@
+const PRODUCTS = [
+  {
+    name: "Air Jordan 1 Low Midnight Navy",
+    urls: {
+      mainstreet: "https://marketplace.mainstreet.co.in/products/air-jordan-1-low-midnight-navy",
+      culture: "https://www.culture-circle.com/products/all/air-jordan-1-low-alternate-royal-toe-2023",
+      dawntown: "https://dawntown.co.in/products/air-jordan-1-low-midnight-navy-wolf-grey-copy",
+      hypefly: "https://hypefly.co.in/products/air-jordan-1-low-midnight-navy"
+    }
+  }
+  // Add more products here
+];
+
+function setupSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName("Price Tracker");
+  if (!sheet) {
+    sheet = ss.insertSheet("Price Tracker");
+  } else {
+    sheet.clear();
+  }
+
+  const headers = ["Product", "Mainstreet Price", "Culture Circle Price", "Dawntown Price", "Hypefly Price", "Lowest Price", "Last Updated"];
+  sheet.appendRow(headers);
+  sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
+  sheet.setColumnWidths(1, headers.length, 180);
+}
+
+function getPricesFromMultipleSites() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Price Tracker");
+  if (!sheet) return;
+
+  PRODUCTS.forEach((product, index) => {
+    const row = index + 2;
+
+    const priceMainstreet = fetchPrice(product.urls.mainstreet);
+    const priceCulture = fetchPrice(product.urls.culture);
+    const priceDawntown = fetchPrice(product.urls.dawntown);
+    const priceHypefly = fetchPrice(product.urls.hypefly);
+
+    const prices = [priceMainstreet, priceCulture, priceDawntown, priceHypefly];
+    const filteredPrices = prices.filter(p => typeof p === "number");
+    const lowest = filteredPrices.length ? Math.min(...filteredPrices) : "N/A";
+
+    sheet.getRange(row, 1).setValue(product.name);
+    sheet.getRange(row, 2).setValue(priceMainstreet ?? "N/A");
+    sheet.getRange(row, 3).setValue(priceCulture ?? "N/A");
+    sheet.getRange(row, 4).setValue(priceDawntown ?? "N/A");
+    sheet.getRange(row, 5).setValue(priceHypefly ?? "N/A");
+    sheet.getRange(row, 6).setValue(typeof lowest === "number" ? `₹${lowest.toFixed(2)}` : "N/A");
+    sheet.getRange(row, 7).setValue(new Date());
+  });
+}
+
+function fetchPrice(url) {
+  try {
+    const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+    const html = response.getContentText();
+
+    const metaPrice = html.match(/"price"\s*:\s*"(\d+\.\d{2})"/);
+    if (metaPrice) return parseFloat(metaPrice[1]);
+
+    const altPrice = html.match(/Rs\.?\s?(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)/i);
+    if (altPrice) return parseFloat(altPrice[1].replace(/,/g, ''));
+
+    return null;
+  } catch (e) {
+    Logger.log(`Error fetching ${url}: ${e}`);
+    return null;
+  }
+}

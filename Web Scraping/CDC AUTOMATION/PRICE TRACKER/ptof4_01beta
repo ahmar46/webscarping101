@@ -1,0 +1,98 @@
+/**
+ * Google Apps Script for tracking sneaker prices across multiple Indian streetwear stores
+ * Stores: Mainstreet, Culture Circle, Dawntown, Hypefly
+ */
+
+function fetchPriceFromMainstreet(url) {
+  try {
+    const html = UrlFetchApp.fetch(url, { muteHttpExceptions: true }).getContentText();
+    const priceRegex = /"price":"(\d+\.\d{2})"/;
+    const match = priceRegex.exec(html);
+    return match ? parseFloat(match[1]) : null;
+  } catch (e) {
+    Logger.log(`Error fetching Mainstreet: ${e}`);
+    return null;
+  }
+}
+
+function fetchPriceFromCultureCircle(url) {
+  try {
+    const html = UrlFetchApp.fetch(url, { muteHttpExceptions: true }).getContentText();
+    const priceRegex = /"price":"(\d+\.\d{2})"/;
+    const match = priceRegex.exec(html);
+    return match ? parseFloat(match[1]) : null;
+  } catch (e) {
+    Logger.log(`Error fetching Culture Circle: ${e}`);
+    return null;
+  }
+}
+
+function fetchPriceFromDawntown(url) {
+  try {
+    const html = UrlFetchApp.fetch(url, { muteHttpExceptions: true }).getContentText();
+    const priceRegex = /"price":"(\d+\.\d{2})"/;
+    const match = priceRegex.exec(html);
+    return match ? parseFloat(match[1]) : null;
+  } catch (e) {
+    Logger.log(`Error fetching Dawntown: ${e}`);
+    return null;
+  }
+}
+
+function fetchPriceFromHypefly(url) {
+  try {
+    const html = UrlFetchApp.fetch(url, { muteHttpExceptions: true }).getContentText();
+    const priceRegex = /"price":"(\d+\.\d{2})"/;
+    const match = priceRegex.exec(html);
+    return match ? parseFloat(match[1]) : null;
+  } catch (e) {
+    Logger.log(`Error fetching Hypefly: ${e}`);
+    return null;
+  }
+}
+
+function setupSheet() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Price Tracker") || SpreadsheetApp.getActiveSpreadsheet().insertSheet("Price Tracker");
+  sheet.clear();
+
+  const headers = ["Product", "Mainstreet Price", "Culture Circle Price", "Dawntown Price", "Hypefly Price", "Lowest Price", "Last Updated"];
+  sheet.appendRow(headers);
+  sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
+  sheet.setColumnWidths(1, headers.length, 180);
+}
+
+function getPricesFromMultipleSites() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Price Tracker");
+  if (!sheet) return;
+
+  const products = [
+    { name: "adidas-samba-og-white-black-gum-2", mainstreet: "https://marketplace.mainstreet.co.in/products/adidas-samba-og-white-black-gum-2" },
+    { name: "air-jordan-1-retro-low-og-mocha", mainstreet: "https://marketplace.mainstreet.co.in/products/air-jordan-1-retro-low-og-mocha" },
+    { name: "adidas-samba-og-shoes-black", mainstreet: "https://marketplace.mainstreet.co.in/products/adidas-samba-og-shoes-black" },
+    // ... Continue adding products here
+  ];
+
+  const productRowMap = {};
+  const lastRow = sheet.getLastRow();
+  const productNames = sheet.getRange(2, 1, lastRow - 1).getValues().flat();
+  productNames.forEach((name, i) => productRowMap[name] = i + 2);
+
+  products.forEach(item => {
+    const priceMainstreet = fetchPriceFromMainstreet(item.mainstreet);
+    const priceCultureCircle = fetchPriceFromCultureCircle(item.cultureCircle || item.mainstreet.replace("mainstreet", "culture-circle"));
+    const priceDawntown = fetchPriceFromDawntown(item.dawntown || item.mainstreet.replace("mainstreet", "dawntown"));
+    const priceHypefly = fetchPriceFromHypefly(item.hypefly || item.mainstreet.replace("mainstreet", "hypefly"));
+
+    const prices = [priceMainstreet, priceCultureCircle, priceDawntown, priceHypefly];
+    const lowest = Math.min(...prices.filter(p => p !== null));
+    const row = productRowMap[item.name] || sheet.getLastRow() + 1;
+
+    sheet.getRange(row, 1).setValue(item.name);
+    sheet.getRange(row, 2).setValue(priceMainstreet);
+    sheet.getRange(row, 3).setValue(priceCultureCircle);
+    sheet.getRange(row, 4).setValue(priceDawntown);
+    sheet.getRange(row, 5).setValue(priceHypefly);
+    sheet.getRange(row, 6).setValue(`₹${lowest.toFixed(2)}`);
+    sheet.getRange(row, 7).setValue(new Date().toLocaleString());
+  });
+}
