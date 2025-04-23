@@ -1,12 +1,10 @@
 const PRODUCTS = [
   {
-    name: "Air Jordan 1 Low Midnight Navy",
-    urls: {
-      mainstreet: "https://marketplace.mainstreet.co.in/products/air-jordan-1-low-midnight-navy",
-      culture: "https://www.culture-circle.com/products/all/air-jordan-1-low-alternate-royal-toe-2023",
-      dawntown: "https://dawntown.co.in/products/air-jordan-1-low-midnight-navy-wolf-grey-copy",
-      hypefly: "https://hypefly.co.in/products/air-jordan-1-low-midnight-navy"
-    }
+    name: "adidas-samba-og-white-black-gum-2",
+    urlMainstreet: "https://marketplace.mainstreet.co.in/products/adidas-samba-og-white-black-gum-2",
+    urlCultureCircle: "https://www.culture-circle.com/products/adidas-samba-og-white-black-gum-2",
+    urlDawntown: "https://dawntown.co.in/products/samba-og-white-black-gum",
+    urlHypefly: "https://hypefly.co.in/products/adidas-samba-og-white-black-gum-2"
   }
   // Add more products here
 ];
@@ -33,10 +31,10 @@ function getPricesFromMultipleSites() {
   PRODUCTS.forEach((product, index) => {
     const row = index + 2;
 
-    const priceMainstreet = fetchPrice(product.urls.mainstreet);
-    const priceCulture = fetchPrice(product.urls.culture);
-    const priceDawntown = fetchPrice(product.urls.dawntown);
-    const priceHypefly = fetchPrice(product.urls.hypefly);
+    const priceMainstreet = fetchPrice(product.urlMainstreet);
+    const priceCulture = fetchPrice(product.urlCultureCircle);
+    const priceDawntown = fetchPrice(product.urlDawntown);
+    const priceHypefly = fetchPrice(product.urlHypefly);
 
     const prices = [priceMainstreet, priceCulture, priceDawntown, priceHypefly];
     const filteredPrices = prices.filter(p => typeof p === "number");
